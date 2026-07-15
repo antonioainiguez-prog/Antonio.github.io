@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Daily Rosary</title>
+<style>
+  :root{
+    --paper:#f7f2e8;
+    --paper-2:#efe6d4;
+    --card:#fffdf7;
+    --ink:#2c241b;
+    --ink-soft:#6d5f4b;
+    --ink-faint:#9a8b73;
+    --wood:#96603a;
+    --wood-light:#b47c48;
+    --copper:#b0642e;
+    --copper-deep:#8a4a22;
+    --copper-soft:#c88a52;
+    --line:#e0d5bd;
+    --line-strong:#cdbe9f;
+    --shadow:rgba(70,48,24,.14);
+    --glow:rgba(176,100,46,.35);
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--sans);
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #fbf7ee 0%, var(--paper) 55%, var(--paper-2) 100%);
+    min-height:100dvh;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap{max-width:620px;margin:0 auto;padding:20px 18px 40px;}
+
+  /* ---------- shared ---------- */
+  .kicker{
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--copper);font-weight:700;margin:0 0 6px;
+  }
+  .divider{height:1px;background:linear-gradient(90deg,transparent,var(--line-strong),transparent);margin:14px 0;}
+  .cross-mark{display:block;margin:0 auto 4px;}
+  .fade-in{animation:fade .45s ease both;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+  /* ---------- setup screen ---------- */
+  #setup{text-align:center;}
+  .app-title{
+    font-family:var(--serif);font-weight:600;color:var(--ink);
+    font-size:clamp(30px,7vw,42px);line-height:1.08;margin:6px 0 2px;letter-spacing:.01em;
+  }
+  .app-sub{color:var(--ink-soft);font-size:15px;margin:0 auto 22px;max-width:34ch;line-height:1.5;}
+  .prompt{font-size:14px;color:var(--ink-soft);margin:20px 0 12px;font-weight:600;letter-spacing:.02em;}
+  .days{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;max-width:440px;margin:0 auto;}
+  .day-btn{
+    appearance:none;border:1px solid var(--line-strong);background:var(--card);
+    color:var(--ink);font-family:var(--sans);font-size:14px;font-weight:600;
+    padding:13px 6px;border-radius:13px;cursor:pointer;transition:.16s ease;
+    box-shadow:0 1px 0 var(--shadow);
+  }
+  .day-btn:hover{border-color:var(--copper-soft);transform:translateY(-1px);}
+  .day-btn.today{border-color:var(--copper-soft);}
+  .day-btn.today::after{content:"today";display:block;font-size:9px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--copper);font-weight:700;margin-top:2px;}
+  .day-btn.sel{background:var(--copper);border-color:var(--copper-deep);color:#fff;box-shadow:0 3px 12px var(--glow);}
+  .day-btn.sel::after{color:#f6dcc4;}
+
+  .preview{
+    margin:24px auto 0;max-width:460px;background:var(--card);border:1px solid var(--line);
+    border-radius:18px;padding:20px 22px 22px;box-shadow:0 8px 26px var(--shadow);text-align:left;
+  }
+  .preview h2{
+    font-family:var(--serif);font-weight:600;color:var(--copper-deep);font-size:22px;margin:2px 0 2px;
+  }
+  .preview .days-note{color:var(--ink-faint);font-size:12.5px;margin:0 0 14px;letter-spacing:.02em;}
+  .myst-list{list-style:none;margin:0;padding:0;counter-reset:m;}
+  .myst-list li{
+    counter-increment:m;position:relative;padding:8px 0 8px 34px;font-size:15px;color:var(--ink);
+    border-top:1px solid var(--line);line-height:1.35;
+  }
+  .myst-list li:first-child{border-top:none;}
+  .myst-list li::before{
+    content:counter(m);position:absolute;left:0;top:7px;width:23px;height:23px;border-radius:50%;
+    background:var(--paper-2);color:var(--copper-deep);font-size:12px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;border:1px solid var(--line-strong);
+  }
+  .myst-list li span{display:block;color:var(--ink-faint);font-size:12.5px;margin-top:2px;}
+
+  .cta{
+    appearance:none;border:none;cursor:pointer;font-family:var(--sans);
+    background:linear-gradient(180deg,var(--copper),var(--copper-deep));
+    color:#fff;font-size:17px;font-weight:700;letter-spacing:.02em;
+    padding:16px 30px;border-radius:15px;margin-top:26px;
+    box-shadow:0 8px 22px var(--glow);transition:.16s ease;width:100%;max-width:460px;
+  }
+  .cta:hover{transform:translateY(-2px);box-shadow:0 12px 28px var(--glow);}
+  .cta:active{transform:translateY(0);}
+
+  /* ---------- app screen ---------- */
+  #app{display:none;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;}
+  .set-label{font-family:var(--serif);font-size:19px;color:var(--copper-deep);font-weight:600;}
+  .set-label small{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-faint);font-weight:700;margin-top:1px;}
+  .icon-btn{
+    appearance:none;border:1px solid var(--line-strong);background:var(--card);color:var(--ink-soft);
+    font-family:var(--sans);font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:11px;
+    cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  .icon-btn:hover{border-color:var(--copper-soft);color:var(--copper-deep);}
+
+  .progress{height:7px;background:var(--paper-2);border-radius:99px;overflow:hidden;margin:10px 0 6px;
+    border:1px solid var(--line);}
+  .progress > i{display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,var(--wood-light),var(--copper));transition:width .4s ease;}
+  .phase-tag{text-align:center;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:700;margin:2px 0 8px;}
+
+  .stage{display:flex;flex-direction:column;align-items:center;}
+
+  /* rosary map */
+  .map{width:100%;max-width:208px;margin:2px auto 0;}
+  .map.hidden{display:none;}
+  .map svg{width:100%;height:auto;display:block;}
+  .maptoggle{background:none;border:none;color:var(--ink-faint);font-family:var(--sans);
+    font-size:11.5px;font-weight:600;letter-spacing:.04em;cursor:pointer;margin:2px auto 0;
+    padding:5px 8px;display:block;text-decoration:underline;text-underline-offset:3px;}
+  .maptoggle:hover{color:var(--copper-deep);}
+  .bead{transition:fill .35s ease;}
+  .bead.lit{animation:pulse 1.8s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+
+  /* prayer card */
+  .card{
+    width:100%;background:var(--card);border:1px solid var(--line);border-radius:20px;
+    padding:22px 24px 24px;box-shadow:0 10px 30px var(--shadow);margin-top:6px;
+  }
+  .card .where{font-size:12.5px;letter-spacing:.03em;color:var(--copper);font-weight:700;
+    text-transform:uppercase;margin:0 0 2px;}
+  .card h1{
+    font-family:var(--serif);font-weight:600;color:var(--ink);font-size:clamp(23px,5.4vw,30px);
+    line-height:1.14;margin:2px 0 4px;letter-spacing:.01em;
+  }
+  .fruit{font-size:13.5px;color:var(--ink-faint);font-style:italic;margin:0 0 8px;}
+  .prayer{
+    font-family:var(--serif);font-size:clamp(17px,4.4vw,19.5px);line-height:1.62;color:var(--ink);
+    margin:14px 0 2px;
+  }
+  .prayer.center{text-align:center;}
+  .vr{display:block;margin-top:12px;color:var(--ink-soft);font-size:16px;line-height:1.6;}
+  .vr b{color:var(--copper-deep);font-family:var(--sans);font-size:12px;letter-spacing:.06em;
+    margin-right:6px;font-weight:700;}
+  .note{font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin:16px 0 0;
+    padding-top:14px;border-top:1px solid var(--line);}
+  .optional-tag{display:inline-block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-faint);border:1px solid var(--line-strong);border-radius:99px;padding:2px 8px;
+    font-weight:700;margin-bottom:6px;}
+  .extra{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line-strong);}
+
+  /* counter beads */
+  .counter{margin:18px 0 2px;text-align:center;}
+  .counter .lbl{font-size:13px;color:var(--ink-soft);margin-bottom:12px;}
+  .counter .lbl b{color:var(--copper-deep);font-size:15px;}
+  .beadrow{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;align-items:center;
+    max-width:340px;margin:0 auto;}
+  .cbead{
+    width:26px;height:26px;border-radius:50%;background:var(--paper-2);
+    border:1.5px solid var(--line-strong);cursor:pointer;transition:.18s ease;position:relative;
+  }
+  .cbead.done{background:radial-gradient(circle at 35% 30%,var(--copper-soft),var(--copper) 70%);
+    border-color:var(--copper-deep);transform:scale(1);}
+  .cbead.next{border-color:var(--copper);box-shadow:0 0 0 4px var(--glow);animation:tapme 1.6s ease-in-out infinite;}
+  @keyframes tapme{0%,100%{box-shadow:0 0 0 4px var(--glow);}50%{box-shadow:0 0 0 7px rgba(176,100,46,.16);}}
+  .cbead:hover{transform:scale(1.08);}
+  .counter-tools{margin-top:12px;display:flex;gap:10px;justify-content:center;align-items:center;}
+  .mini{appearance:none;border:1px solid var(--line-strong);background:var(--card);color:var(--ink-soft);
+    border-radius:9px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sans);}
+  .mini:hover{border-color:var(--copper-soft);color:var(--copper-deep);}
+  .mini[disabled]{opacity:.4;cursor:default;}
+
+  /* nav */
+  .nav{display:flex;gap:12px;width:100%;margin-top:20px;}
+  .nav button{
+    flex:1;appearance:none;font-family:var(--sans);font-weight:700;font-size:16px;
+    padding:15px 10px;border-radius:14px;cursor:pointer;transition:.16s ease;
+  }
+  .btn-back{background:var(--card);border:1px solid var(--line-strong);color:var(--ink-soft);flex:0 0 34%;}
+  .btn-back:hover{border-color:var(--copper-soft);color:var(--copper-deep);}
+  .btn-back[disabled]{opacity:.4;cursor:default;}
+  .btn-next{background:linear-gradient(180deg,var(--copper),var(--copper-deep));border:none;color:#fff;
+    box-shadow:0 6px 18px var(--glow);}
+  .btn-next:hover{transform:translateY(-1px);}
+  .hint{text-align:center;font-size:11.5px;color:var(--ink-faint);margin-top:12px;letter-spacing:.02em;}
+
+  /* done screen */
+  #done{display:none;text-align:center;padding-top:30px;}
+  #done h1{font-family:var(--serif);font-weight:600;font-size:34px;color:var(--copper-deep);margin:14px 0 6px;}
+  #done p{color:var(--ink-soft);font-size:16px;line-height:1.6;max-width:36ch;margin:0 auto 8px;}
+
+  @media(min-width:560px){
+    .map{max-width:320px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===================== SETUP ===================== -->
+  <section id="setup" class="fade-in">
+    <svg class="cross-mark" width="34" height="46" viewBox="0 0 34 46" aria-hidden="true">
+      <rect x="14.5" y="0" width="5" height="46" rx="1.5" fill="#b0642e"/>
+      <rect x="4" y="12" width="26" height="5" rx="1.5" fill="#b0642e"/>
+    </svg>
+    <h1 class="app-title">Daily Rosary</h1>
+    <p class="app-sub">A guided walk through the Rosary — the right Mysteries for today, one bead and one prayer at a time.</p>
+
+    <p class="prompt">Which day are you praying?</p>
+    <div class="days" id="days"></div>
+
+    <div id="preview"></div>
+  </section>
+
+  <!-- ===================== APP ===================== -->
+  <section id="app">
+    <div class="topbar">
+      <div class="set-label" id="setLabel">—<small id="setDays"></small></div>
+      <button class="icon-btn" id="restartTop">Change day</button>
+    </div>
+    <div class="progress"><i id="progFill"></i></div>
+    <div class="phase-tag" id="phaseTag"></div>
+
+    <div class="stage">
+      <div class="map" id="map"></div>
+      <button class="maptoggle" id="mapToggle">Hide diagram</button>
+      <div class="card fade-in" id="card"></div>
+
+      <div class="nav">
+        <button class="btn-back" id="btnBack">Back</button>
+        <button class="btn-next" id="btnNext">Next</button>
+      </div>
+      <div class="hint" id="navHint">Tip: use ← and → keys to move between prayers</div>
+    </div>
+  </section>
+
+  <!-- ===================== DONE ===================== -->
+  <section id="done">
+    <svg class="cross-mark" width="40" height="54" viewBox="0 0 34 46" aria-hidden="true">
+      <rect x="14.5" y="0" width="5" height="46" rx="1.5" fill="#b0642e"/>
+      <rect x="4" y="12" width="26" height="5" rx="1.5" fill="#b0642e"/>
+    </svg>
+    <h1>Rosary Complete</h1>
+    <p id="doneMsg"></p>
+    <p style="color:var(--ink-faint);font-size:14px;">May the peace of these Mysteries stay with you.</p>
+    <button class="cta" id="prayAgain" style="max-width:300px;">Pray again</button>
+  </section>
+
+</div>
+
+<script>
+/* ---------------- PRAYER TEXTS ---------------- */
+var P = {
+  cross: "In the Name of the Father, and of the Son, and of the Holy Spirit. Amen.",
+  creed: "I believe in God, the Father almighty, Creator of heaven and earth, and in Jesus Christ, His only Son, our Lord, Who was conceived by the Holy Spirit, born of the Virgin Mary, suffered under Pontius Pilate, was crucified, died, and was buried. He descended into hell; on the third day He rose again from the dead. He ascended into heaven and is seated at the right hand of God the Father almighty. From there He will come to judge the living and the dead. I believe in the Holy Spirit, the holy catholic Church, the communion of saints, the forgiveness of sins, the resurrection of the body, and life everlasting. Amen.",
+  our: "Our Father, Who art in heaven, hallowed be Thy name; Thy kingdom come; Thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.",
+  hail: "Hail Mary, full of grace, the Lord is with thee; blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.",
+  glory: "Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.",
+  fatima: "O my Jesus, forgive us our sins, save us from the fires of hell, and lead all souls to Heaven, especially those in most need of Thy mercy. Amen.",
+  queen: "Hail, holy Queen, Mother of mercy, our life, our sweetness, and our hope. To thee do we cry, poor banished children of Eve; to thee do we send up our sighs, mourning and weeping in this valley of tears. Turn then, most gracious advocate, thine eyes of mercy toward us, and after this, our exile, show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary."
+};
+
+/* ---------------- MYSTERIES ---------------- */
+var MYST = {
+  joyful:{ name:"The Joyful Mysteries", short:"Joyful Mystery", days:"Mondays & Saturdays",
+    items:[
+      {t:"The Annunciation", m:"The angel Gabriel announces to Mary that she will bear the Son of God.", f:"Fruit: humility"},
+      {t:"The Visitation", m:"Mary visits Elizabeth, who greets her as the mother of the Lord.", f:"Fruit: love of neighbor"},
+      {t:"The Nativity", m:"Jesus is born in Bethlehem and laid in a manger.", f:"Fruit: poverty of spirit"},
+      {t:"The Presentation in the Temple", m:"Mary and Joseph present the infant Jesus in the Temple.", f:"Fruit: obedience"},
+      {t:"The Finding in the Temple", m:"After three days, Mary and Joseph find Jesus among the teachers.", f:"Fruit: joy in finding Jesus"}
+    ]},
+  sorrowful:{ name:"The Sorrowful Mysteries", short:"Sorrowful Mystery", days:"Tuesdays & Fridays",
+    items:[
+      {t:"The Agony in the Garden", m:"In Gethsemane, Jesus prays in anguish as His Passion draws near.", f:"Fruit: sorrow for sin"},
+      {t:"The Scourging at the Pillar", m:"Jesus is bound and cruelly scourged.", f:"Fruit: purity"},
+      {t:"The Crowning with Thorns", m:"A crown of thorns is pressed upon His head.", f:"Fruit: moral courage"},
+      {t:"The Carrying of the Cross", m:"Jesus carries His Cross along the way to Calvary.", f:"Fruit: patience"},
+      {t:"The Crucifixion", m:"Jesus is nailed to the Cross and dies for our salvation.", f:"Fruit: perseverance"}
+    ]},
+  glorious:{ name:"The Glorious Mysteries", short:"Glorious Mystery", days:"Wednesdays & Sundays",
+    items:[
+      {t:"The Resurrection", m:"Christ rises from the dead on the third day.", f:"Fruit: faith"},
+      {t:"The Ascension", m:"Jesus ascends into heaven forty days after His Resurrection.", f:"Fruit: hope"},
+      {t:"The Descent of the Holy Spirit", m:"The Holy Spirit descends upon the Apostles at Pentecost.", f:"Fruit: love & wisdom"},
+      {t:"The Assumption", m:"Mary is taken body and soul into heavenly glory.", f:"Fruit: a happy death"},
+      {t:"The Coronation of Mary", m:"Mary is crowned Queen of Heaven and Earth.", f:"Fruit: trust in Mary"}
+    ]},
+  luminous:{ name:"The Luminous Mysteries", short:"Luminous Mystery", days:"Thursdays",
+    items:[
+      {t:"The Baptism in the Jordan", m:"The Father proclaims Jesus His beloved Son.", f:"Fruit: openness to the Spirit"},
+      {t:"The Wedding at Cana", m:"At Mary's word, Jesus turns water into wine.", f:"Fruit: to Jesus through Mary"},
+      {t:"The Proclamation of the Kingdom", m:"Jesus calls all to conversion and forgives sins.", f:"Fruit: repentance & trust"},
+      {t:"The Transfiguration", m:"Christ's glory shines out upon the mountain.", f:"Fruit: desire for holiness"},
+      {t:"The Institution of the Eucharist", m:"Jesus gives His Body and Blood at the Last Supper.", f:"Fruit: adoration"}
+    ]}
+};
+
+/* day (0=Sun..6=Sat) -> mystery key */
+var DAY_TO_SET = ["glorious","joyful","sorrowful","glorious","luminous","sorrowful","joyful"];
+var DAY_NAMES  = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+var ORD = ["First","Second","Third","Fourth","Fifth"];
+
+/* ---------------- STATE ---------------- */
+var state = { setKey:null, steps:[], i:0, counts:{}, mapOn:true };
+
+/* ---------------- BUILD STEP LIST ---------------- */
+function buildSteps(key){
+  var set = MYST[key];
+  var s = [];
+  // Opening
+  s.push({focus:"crucifix", where:"Hold the crucifix", title:"The Sign of the Cross",
+          body:P.cross, note:"Begin here, at the crucifix."});
+  s.push({focus:"crucifix", where:"At the crucifix", title:"The Apostles' Creed",
+          body:P.creed, note:"Pray the whole Creed while still holding the crucifix."});
+  s.push({focus:"tailOF", where:"First large bead", title:"The Our Father",
+          body:P.our, note:"Move to the single large bead on the tail."});
+  s.push({focus:"tail3", where:"The next three beads", title:"Three Hail Marys",
+          body:P.hail, count:3,
+          note:"One Hail Mary on each bead \u2014 prayed for an increase of Faith, Hope, and Charity."});
+  s.push({focus:"medal", where:"At the centerpiece medal", title:"The Glory Be",
+          body:P.glory, center:true, note:"You have reached the medal. Now the decades begin."});
+
+  // 5 decades
+  for(var d=0; d<5; d++){
+    var it = set.items[d];
+    s.push({focus:"decadeAnnounce", decade:d+1, announce:true,
+            where:ORD[d]+" "+set.short, title:it.t, fruit:it.f, body:it.m,
+            note:"Announce the mystery, then pause to picture the scene."});
+    s.push({focus:"decadeOF", decade:d+1, where:"Large bead \u2022 decade "+(d+1),
+            title:"The Our Father", body:P.our, note:"On the large bead that begins this decade."});
+    s.push({focus:"decadeHM", decade:d+1, where:"The ten beads \u2022 decade "+(d+1),
+            title:"Ten Hail Marys", body:P.hail, count:10,
+            note:"One Hail Mary on each of the ten beads, resting in the mystery as you go."});
+    s.push({focus:"decadeEnd", decade:d+1, where:"After the tenth bead", title:"The Glory Be",
+            body:P.glory, center:true,
+            extra:{label:"The Fatima Prayer", optional:true, body:P.fatima},
+            note:"Prayed in the small space of cord before the next decade."});
+  }
+
+  // Closing
+  s.push({focus:"medal", where:"Back at the medal", title:"Hail, Holy Queen",
+          body:P.queen, versicle:true, note:"Having finished all five decades, return to the medal."});
+  s.push({focus:"crucifix", where:"Return to the crucifix", title:"The Sign of the Cross",
+          body:P.cross, note:"Close the Rosary just as you began it."});
+  s.push({done:true});
+  return s;
+}
+
+/* ---------------- ROSARY MAP (SVG) ---------------- */
+var MAP = (function(){
+  var cx=150, cy=160, rx=116, ry=116, gap=52, n=55;
+  var span=360-gap, start=90+gap/2;
+  function pos(i){
+    var frac=i/(n-1), a=(start+frac*span)*Math.PI/180;
+    return [cx+rx*Math.cos(a), cy+ry*Math.sin(a)];
+  }
+  var loop=[]; for(var i=0;i<n;i++) loop.push(pos(i));
+  var mx=cx, my=cy+ry+8;                 // medal
+  var t0=[cx,my+26], t1=[cx,my+46], t2=[cx,my+64], t3=[cx,my+82]; // tail OF + 3
+  var crux=[cx,my+108];
+  return {cx:cx,cy:cy,loop:loop,mx:mx,my:my,tail:[t0,t1,t2,t3],crux:crux,n:n};
+})();
+
+function litFor(step, done){
+  // returns object describing which elements are lit
+  var L={crux:false,medal:false,tail:[false,false,false,false],loop:{}};
+  var f=step.focus;
+  if(f==="crucifix") L.crux=true;
+  else if(f==="medal") L.medal=true;
+  else if(f==="tailOF") L.tail[0]=true;
+  else if(f==="tail3"){ L.tail[1]=true; L.tail[2]=true; L.tail[3]=true; }
+  else if(step.decade){
+    var base=(step.decade-1)*11; // index in loop; base is OF bead
+    if(f==="decadeAnnounce"){ L.loop[base]=1; L.medal=true; }
+    else if(f==="decadeOF"){ L.loop[base]=1; }
+    else if(f==="decadeHM"){
+      for(var k=1;k<=10;k++) L.loop[base+k]= (done && k>done)?0.4:1;
+    } else if(f==="decadeEnd"){ L.loop[base+10]=1; }
+  }
+  return L;
+}
+
+function bead(x,y,r,fill,lit,extraLit){
+  var cls="bead"+(lit?" lit":"");
+  var f = lit ? "var(--copper)" : (extraLit? "var(--copper-soft)" : fill);
+  return '<circle class="'+cls+'" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+r+
+         '" fill="'+f+'" stroke="#7c5230" stroke-width="1"/>';
+}
+
+function drawMap(step, done){
+  var el=document.getElementById("map");
+  if(!state.mapOn){ el.classList.add("hidden"); el.innerHTML=""; return; }
+  el.classList.remove("hidden");
+  el.innerHTML=renderMap(step, done);
+}
+function renderMap(step, done){
+  var L=litFor(step, done||0);
+  var svg='<svg viewBox="22 34 256 384" role="img" aria-label="Rosary position">';
+  // loop connecting path
+  var dpath="M";
+  for(var i=0;i<MAP.n;i++){ dpath+=(i?"L":"")+MAP.loop[i][0].toFixed(1)+" "+MAP.loop[i][1].toFixed(1)+" "; }
+  svg+='<path d="'+dpath+'" fill="none" stroke="var(--line-strong)" stroke-width="1.4"/>';
+  // tail line
+  svg+='<path d="M'+MAP.mx+' '+(MAP.my+10)+' L'+MAP.crux[0]+' '+(MAP.crux[1]-6)+
+       '" fill="none" stroke="var(--line-strong)" stroke-width="1.4"/>';
+  // loop beads
+  for(var j=0;j<MAP.n;j++){
+    var isOF=(j%11===0);
+    var v=L.loop[j];
+    var lit = v===1;
+    var soft = v===0.4;
+    svg+=bead(MAP.loop[j][0],MAP.loop[j][1], isOF?7:4.6, isOF?"var(--wood)":"var(--wood-light)", lit, soft);
+  }
+  // medal
+  var mlit=L.medal;
+  svg+='<circle class="bead'+(mlit?' lit':'')+'" cx="'+MAP.mx+'" cy="'+MAP.my+
+       '" r="11" fill="'+(mlit?'var(--copper)':'#c9902f')+'" stroke="#7c5230" stroke-width="1.6"/>'+
+       '<circle cx="'+MAP.mx+'" cy="'+MAP.my+'" r="5.5" fill="none" stroke="#7c5230" stroke-width="1"/>';
+  // tail beads
+  for(var t=0;t<4;t++){
+    var tb=MAP.tail[t];
+    svg+=bead(tb[0],tb[1], t===0?7:4.6, t===0?"var(--wood)":"var(--wood-light)", L.tail[t], false);
+  }
+  // crucifix
+  var clit=L.crux;
+  var col=clit?"var(--copper)":"#a06a3c";
+  var cxp=MAP.crux[0], cyp=MAP.crux[1];
+  svg+='<g class="'+(clit?'bead lit':'')+'">'+
+       '<rect x="'+(cxp-2)+'" y="'+(cyp-10)+'" width="4" height="30" rx="1.4" fill="'+col+'"/>'+
+       '<rect x="'+(cxp-9)+'" y="'+(cyp-2)+'" width="18" height="4" rx="1.4" fill="'+col+'"/>'+
+       '</g>';
+  svg+='</svg>';
+  return svg;
+}
+
+/* ---------------- SETUP SCREEN ---------------- */
+var today = new Date().getDay();
+function renderDays(){
+  var box=document.getElementById("days");
+  box.innerHTML="";
+  var order=[1,2,3,4,5,6,0]; // Mon..Sun
+  order.forEach(function(dn){
+    var b=document.createElement("button");
+    b.className="day-btn"+(dn===today?" today":"");
+    b.textContent=DAY_NAMES[dn].slice(0,3);
+    b.setAttribute("data-day",dn);
+    b.onclick=function(){ selectDay(dn); };
+    box.appendChild(b);
+  });
+}
+function selectDay(dn){
+  document.querySelectorAll(".day-btn").forEach(function(el){
+    el.classList.toggle("sel", +el.getAttribute("data-day")===dn);
+  });
+  var key=DAY_TO_SET[dn];
+  state.setKey=key;
+  var set=MYST[key];
+  var html='<div class="preview fade-in">'+
+    '<h2>'+set.name+'</h2>'+
+    '<p class="days-note">Prayed on '+set.days+' \u2014 you chose '+DAY_NAMES[dn]+'</p>'+
+    '<ol class="myst-list">';
+  set.items.forEach(function(it){
+    html+='<li>'+it.t+'<span>'+it.m+'</span></li>';
+  });
+  html+='</ol></div>'+
+    '<button class="cta" id="beginBtn">Begin the Rosary \u2192</button>';
+  document.getElementById("preview").innerHTML=html;
+  document.getElementById("beginBtn").onclick=beginRosary;
+  document.getElementById("preview").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+/* ---------------- START / RENDER APP ---------------- */
+function beginRosary(){
+  state.steps=buildSteps(state.setKey);
+  state.i=0; state.counts={};
+  var set=MYST[state.setKey];
+  document.getElementById("setLabel").childNodes[0].nodeValue=set.name.replace("The ","");
+  document.getElementById("setDays").textContent=set.days;
+  document.getElementById("setup").style.display="none";
+  document.getElementById("done").style.display="none";
+  document.getElementById("app").style.display="block";
+  window.scrollTo(0,0);
+  render();
+}
+
+function phaseName(step){
+  if(step.focus==="crucifix"||step.focus==="tailOF"||step.focus==="tail3"||
+     (step.focus==="medal" && state.i<6)) return "Opening Prayers";
+  if(step.decade) return step.decade+ (["st","nd","rd","th","th"][step.decade-1]) +" Decade";
+  if(step.focus==="medal") return "Closing Prayers";
+  return "Closing Prayers";
+}
+
+function render(){
+  var step=state.steps[state.i];
+  if(step.done){ finish(); return; }
+
+  // progress
+  var pct=Math.round((state.i/(state.steps.length-1))*100);
+  document.getElementById("progFill").style.width=pct+"%";
+  document.getElementById("phaseTag").textContent=phaseName(step);
+
+  // map
+  var done=state.counts[state.i]||0;
+  drawMap(step, done);
+
+  // card
+  var html='<p class="where">'+step.where+'</p>';
+  if(step.announce){
+    html+='<h1>'+step.title+'</h1>';
+    if(step.fruit) html+='<p class="fruit">'+step.fruit+'</p>';
+    html+='<p class="prayer">'+step.body+'</p>';
+  } else {
+    html+='<h1>'+step.title+'</h1>';
+    html+='<p class="prayer'+(step.center?' center':'')+'">'+step.body+'</p>';
+    if(step.versicle){
+      html+='<span class="vr"><b>V.</b>Pray for us, O holy Mother of God.</span>'+
+            '<span class="vr"><b>R.</b>That we may be made worthy of the promises of Christ.</span>';
+    }
+    if(step.extra){
+      html+='<div class="extra">';
+      if(step.extra.optional) html+='<span class="optional-tag">Optional</span><br>';
+      html+='<p class="where" style="color:var(--ink-faint);">'+step.extra.label+'</p>'+
+            '<p class="prayer center" style="font-size:17px;margin-top:6px;">'+step.extra.body+'</p></div>';
+    }
+  }
+  // counter
+  if(step.count){
+    html+=renderCounter(step.count, done);
+  }
+  if(step.note) html+='<p class="note">'+step.note+'</p>';
+
+  var card=document.getElementById("card");
+  card.innerHTML=html;
+  card.classList.remove("fade-in"); void card.offsetWidth; card.classList.add("fade-in");
+
+  // wire counter beads
+  if(step.count){ wireCounter(step.count); }
+
+  // nav
+  document.getElementById("btnBack").disabled = state.i===0;
+  var nextBtn=document.getElementById("btnNext");
+  var last = state.i===state.steps.length-2; // step before done
+  nextBtn.textContent = last ? "Finish \u2713" : "Next \u2192";
+}
+
+function renderCounter(n, done){
+  var h='<div class="counter"><div class="lbl">Tap each bead as you pray \u2014 <b><span id="cNum">'+done+'</span> / '+n+'</b></div><div class="beadrow" id="beadrow">';
+  for(var k=0;k<n;k++){
+    var c="cbead"+(k<done?" done":(k===done?" next":""));
+    h+='<div class="'+c+'" data-k="'+k+'"></div>';
+  }
+  h+='</div><div class="counter-tools">'+
+     '<button class="mini" id="cMinus">\u2212 one</button>'+
+     '<button class="mini" id="cReset">reset</button></div></div>';
+  return h;
+}
+function setCount(v,n){
+  v=Math.max(0,Math.min(n,v));
+  state.counts[state.i]=v;
+  document.getElementById("cNum").textContent=v;
+  var beads=document.querySelectorAll("#beadrow .cbead");
+  beads.forEach(function(b,idx){
+    b.classList.toggle("done", idx<v);
+    b.classList.toggle("next", idx===v);
+  });
+  // update the map's within-decade fill too
+  var step=state.steps[state.i];
+  drawMap(step, v);
+}
+function wireCounter(n){
+  var beads=document.querySelectorAll("#beadrow .cbead");
+  beads.forEach(function(b){
+    b.onclick=function(){
+      var k=+b.getAttribute("data-k");
+      var cur=state.counts[state.i]||0;
+      // tapping the next bead advances; tapping a done bead sets to that
+      if(k===cur) setCount(cur+1,n);
+      else if(k<cur) setCount(k+1,n);
+      else setCount(k+1,n);
+    };
+  });
+  document.getElementById("cMinus").onclick=function(){ setCount((state.counts[state.i]||0)-1,n); };
+  document.getElementById("cReset").onclick=function(){ setCount(0,n); };
+}
+
+function go(dir){
+  var ni=state.i+dir;
+  if(ni<0) return;
+  if(ni>state.steps.length-1) return;
+  state.i=ni;
+  window.scrollTo({top:0,behavior:"smooth"});
+  render();
+}
+function finish(){
+  document.getElementById("app").style.display="none";
+  var set=MYST[state.setKey];
+  document.getElementById("doneMsg").textContent=
+    "You have prayed all five "+set.short.replace(" Mystery","")+" Mysteries.";
+  document.getElementById("done").style.display="block";
+  window.scrollTo(0,0);
+}
+
+/* ---------------- EVENTS ---------------- */
+document.getElementById("btnBack").onclick=function(){ go(-1); };
+document.getElementById("btnNext").onclick=function(){ go(1); };
+document.getElementById("mapToggle").onclick=function(){
+  state.mapOn=!state.mapOn;
+  this.textContent=state.mapOn?"Hide diagram":"Show diagram";
+  var step=state.steps[state.i];
+  drawMap(step, state.counts[state.i]||0);
+};
+document.getElementById("restartTop").onclick=function(){
+  document.getElementById("app").style.display="none";
+  document.getElementById("done").style.display="none";
+  document.getElementById("setup").style.display="block";
+  window.scrollTo(0,0);
+};
+document.getElementById("prayAgain").onclick=function(){
+  document.getElementById("done").style.display="none";
+  document.getElementById("setup").style.display="block";
+  window.scrollTo(0,0);
+};
+document.addEventListener("keydown",function(e){
+  if(document.getElementById("app").style.display!=="block") return;
+  if(e.key==="ArrowRight"){ e.preventDefault(); go(1); }
+  else if(e.key==="ArrowLeft"){ e.preventDefault(); go(-1); }
+  else if(e.key===" "){
+    var step=state.steps[state.i];
+    if(step && step.count){ e.preventDefault(); setCount((state.counts[state.i]||0)+1, step.count); }
+  }
+});
+
+/* ---------------- INIT ---------------- */
+renderDays();
+selectDay(today); // preselect today so a mystery set + preview is shown immediately
+</script>
+</body>
+</html>
